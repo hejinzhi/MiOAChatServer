@@ -45,7 +45,7 @@ io.on('connection', function(socket) {
         })
         // 监听用户发布聊天内容
     socket.on('message', function(obj) {
-      console.log(obj);
+      obj.time = Date.parse(new Date());
         io.emit('message', obj);
         console.log(obj.name + '说：' + obj.mes);
     });
