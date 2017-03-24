@@ -12,7 +12,7 @@ http.listen(3701, function() {
 var onlineUsers = {};
 // 当前在线人数
 var onlineCount = 0;
-
+var messages=[];
 io.on('connection', function(socket) {
     console.log('新用户已上线！')
     socket.on('login', function(obj) {
@@ -46,6 +46,7 @@ io.on('connection', function(socket) {
         // 监听用户发布聊天内容
     socket.on('message', function(obj) {
       obj.time = Date.parse(new Date());
+      messages.push(obj);
         io.emit('message', obj);
         console.log(obj.name + '说：' + obj.mes);
     });
@@ -54,6 +55,17 @@ io.on('connection', function(socket) {
       io.emit('status', obj);
     });
 
+    socket.on('received',function(obj) {
+      var messages = messages.filter(function(allmes) {
+        return allmes.id != obj.id && allmes.id != obj.time;
+      });
+    });
+
+    function reSend(){
+      for(let i = 0 ;i<messages.length;i++) {
+        io.emit('message', messages[i]);
+      }
+    }
     // 服务器时间同步
     function tick(){
       var now = new Date().toUTCString();
