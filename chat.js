@@ -12,13 +12,17 @@ http.listen(3701, function() {
 var onlineUsers = {};
 // 当前在线人数
 var onlineCount = 0;
-var messages=[];
+var messages = [];
 io.on('connection', function(socket) {
     console.log('新用户已上线！')
     socket.on('login', function(obj) {
-      console.log(obj);
-      let id = obj.id;
-      let username = obj.name;
+        console.log(obj);
+        let id = obj.id;
+        let username = obj.name;
+        let unSendMes = messages.filter(function(mes) {
+            return mes.toId = id;
+        });
+        io.emit('OutlineMessages' + id, unSendMes || []);
         console.log(username + '加入聊天室');
     })
 
@@ -45,32 +49,54 @@ io.on('connection', function(socket) {
         })
         // 监听用户发布聊天内容
     socket.on('message', function(obj) {
-      obj.time = Date.parse(new Date());
-      messages.push(obj);
-        io.emit('message', obj);
-        console.log(obj.name + '说：' + obj.mes);
+        obj.time = Date.parse(new Date());
+        messages.push(obj);
+        if(messages[obj.toId]){
+          messages[obj.toId]++;
+        }else{
+          messages[obj.toId]= 1;
+        }
+        console.log(messages[obj.toId])
+        io.emit('message' + obj.toId, obj);
+        io.emit('message' + obj.fromId, obj);
+        console.log(obj.name + '说：' + obj.content);
     });
 
     socket.on('status', function(obj) {
-      io.emit('status', obj);
+        io.emit('status', obj);
     });
 
-    socket.on('received',function(obj) {
-      var messages = messages.filter(function(allmes) {
-        return allmes.id != obj.id && allmes.id != obj.time;
-      });
+    socket.on('received', function(obj) {
+      messages[obj.toId]--;
+        if (messages && messages.length > 0) {
+            if (obj.length > 0) {
+                for (let i = 0; i < obj.length; i++) {
+                    messages = messages.filter(function(allmes) {
+                        return allmes.id != obj[i].id && allmes.id != obj[i].time;
+                    });
+                }
+            } else {
+                messages = messages.filter(function(allmes) {
+                    return allmes.id != obj.id && allmes.id != obj.time;
+                });
+            }
+        }
+        console.log(obj.content);
     });
 
-    function reSend(){
-      for(let i = 0 ;i<messages.length;i++) {
-        io.emit('message', messages[i]);
-      }
+    function reSend() {
+        for(let prop in messages){
+          if(messages[prop]>0) {
+            io.emit('hasOutlineMes'+prop, true);
+          }
+        }
     }
     // 服务器时间同步
-    function tick(){
-      var now = new Date().toUTCString();
-      io.emit('time', now);
+    function tick() {
+        var now = new Date().toUTCString();
+        io.emit('time', now);
     }
 
     setInterval(tick, 1000);
+    setInterval(reSend, 5000);
 })
