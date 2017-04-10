@@ -13,6 +13,7 @@ var onlineUsers = {};
 // 当前在线人数
 var onlineCount = 0;
 var messages = [];
+
 io.on('connection', function(socket) {
     console.log('新用户已上线！')
     socket.on('login', function(obj) {
@@ -98,5 +99,5 @@ io.on('connection', function(socket) {
     }
 
     setInterval(tick, 1000);
-    setInterval(reSend, 5000);
+    // setInterval(reSend, 5000);
 })
