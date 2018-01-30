@@ -3,8 +3,9 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var path = require('path');
+var message = require('./controllers/message');
 
-http.listen(3701, function() {
+http.listen(3388, function () {
     console.log('Server starting on port 3701')
 })
 
@@ -14,21 +15,22 @@ var onlineUsers = {};
 var onlineCount = 0;
 var messages = [];
 
-io.on('connection', function(socket) {
+message.getAllOutlineMessages().then(data => {
+    messages = data;
+});
+
+io.on('connection', async function (socket) {
     console.log('新用户已上线！')
-    socket.on('login', function(obj) {
-        console.log(obj);
-        let id = obj.id;
-        let username = obj.name;
-        let unSendMes = messages.filter(function(mes) {
-            return mes.toId = id;
-        });
-        io.emit('OutlineMessages' + id, unSendMes || []);
-        console.log(username + '加入聊天室');
-    })
+
+    socket.on('getOutlineMessages', async function (obj) {
+        let username = obj.username;
+        let msgs = await message.getOutlineMessageByUsername(username);
+        io.emit('OutlineMessages_' + username, msgs || []);
+
+    });
 
     //监听用户退出
-    socket.on('disconnect', function() {
+    socket.on('disconnect', function () {
             //将退出的用户从在线列表中删除
             if (onlineUsers.hasOwnProperty(socket.name)) {
                 // 退出用户的信息
@@ -49,47 +51,42 @@ io.on('connection', function(socket) {
             }
         })
         // 监听用户发布聊天内容
-    socket.on('message', function(obj) {
-        obj.time = Date.parse(new Date());
-        messages.push(obj);
-        if(messages[obj.toId]){
-          messages[obj.toId]++;
-        }else{
-          messages[obj.toId]= 1;
-        }
-        console.log(messages[obj.toId])
-        io.emit('message' + obj.toId, obj);
-        io.emit('message' + obj.fromId, obj);
-        console.log(obj.name + '说：' + obj.content);
+    socket.on('message', async function (obj) {
+        let msg = await message.addMessage(obj);
+        messages.push(msg);
+        io.emit('message_' + obj.TO_USER_NAME, msg);
     });
 
-    socket.on('status', function(obj) {
+    socket.on('status', function (obj) {
         io.emit('status', obj);
     });
 
-    socket.on('received', function(obj) {
-      messages[obj.toId]--;
-        if (messages && messages.length > 0) {
-            if (obj.length > 0) {
-                for (let i = 0; i < obj.length; i++) {
-                    messages = messages.filter(function(allmes) {
-                        return allmes.id != obj[i].id && allmes.id != obj[i].time;
-                    });
+    socket.on('received', async function (obj) {
+        if (obj && obj.length > 0) {
+            for (let i = 0; i < obj.length; i++) {
+                let index = -1;
+                for (let j = 0; j < messages.length; j++) {
+                    if (messages[j].ID === obj[i]) {
+                        index = j;
+                        break;
+                    }
                 }
-            } else {
-                messages = messages.filter(function(allmes) {
-                    return allmes.id != obj.id && allmes.id != obj.time;
-                });
+                if (index > -1) {
+                    messages.splice(index, 1);
+                    await message.updateMessage(obj[i]);
+                }
+
             }
         }
-        console.log(obj.content);
     });
 
+
+
     function reSend() {
-        for(let prop in messages){
-          if(messages[prop]>0) {
-            io.emit('hasOutlineMes'+prop, true);
-          }
+        for (let prop in messages) {
+            if (messages[prop] > 0) {
+                io.emit('hasOutlineMes' + prop, true);
+            }
         }
     }
     // 服务器时间同步
@@ -98,6 +95,6 @@ io.on('connection', function(socket) {
         io.emit('time', now);
     }
 
-    setInterval(tick, 1000);
+    // setInterval(tick, 1000);
     // setInterval(reSend, 5000);
 })
