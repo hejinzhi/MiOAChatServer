@@ -10,7 +10,7 @@ var config = require('./config/default');
 var util = require('./lib/util');
 
 http.listen(3388, function () {
-    console.log('Server starting on port 3701')
+    console.log('Server starting on port 3388')
 })
 
 // 在线用户

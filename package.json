@@ -1,10 +1,12 @@
 {
-  "name": "shundaoa",
+  "name": "chatServer",
   "version": "1.0.0",
   "description": "shunda oa node",
-  "main": "index.js",
+  "main": "chat.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "npm i && set NODE_ENV=production && pm2 start chat.js --name='chatServer'",
+    "update": "git pull origin master && npm i && set NODE_ENV=production && pm2 reload 'chatServer'"
   },
   "author": "gary.h",
   "license": "ISC",
