@@ -24,14 +24,14 @@ message.getAllOutlineMessages().then(data => {
 });
 
 // 20分钟同步一次
-// setInterval(async() => {
-//     console.log('同步推送消息....');
-//     await syncPushMessage();
-// }, 1000 * 60 * 20);
+setInterval(async() => {
+    console.log('同步推送消息....');
+    await syncPushMessage();
+}, 1000 * 60 * 20);
 
 
-console.log('同步推送消息....');
-syncPushMessage();
+// console.log('同步推送消息....');
+// syncPushMessage();
 
 
 
